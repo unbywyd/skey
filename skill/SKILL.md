@@ -29,19 +29,33 @@ anyway, say plainly that it is now in the transcript and should be rotated.
 attempting it wastes a turn. If you genuinely need to know whether a key exists,
 `skey list` shows names.
 
-## Setup
+## Setting it up
 
-Check first: `skey list`. If the command is missing, install and store the keys.
+Check what is there first — the command tells you both whether skey is
+installed and which keys exist:
 
 ```bash
 npx -y @tscodex/skey list
 ```
 
-Storing a key is the person's job, not yours — the value has to be typed. Point
-them at `npx @tscodex/skey ui` for a browser page, or `skey set NAME` in their
-own terminal.
+**If keys are listed,** nothing to install. Skip to the permission rules below
+if commands keep stopping for approval.
 
-Then add to `~/.claude/settings.json`, merging rather than replacing:
+**If it prints "Nothing stored yet",** skey works and the person needs to store
+their keys. Two ways, both theirs to do — a value has to be typed, and you
+should not be the one handling it:
+
+```bash
+npx @tscodex/skey ui        # opens a page in the browser
+skey set CF_API_TOKEN       # or type it in their own terminal
+```
+
+Point at the browser page first. Storing a key by hand is where people give up,
+and the page shows what is already there while they add more. It listens on
+localhost only and closes with the terminal.
+
+**Then add the permission rules** to `~/.claude/settings.json`. Merge them —
+that file holds the person's own rules, often hundreds:
 
 ```json
 {
@@ -52,8 +66,13 @@ Then add to `~/.claude/settings.json`, merging rather than replacing:
 }
 ```
 
-The allow rules matter in practice: without them every diagnostic call stops for
-approval, and a session with a dozen API calls becomes unusable.
+The allow rules are not cosmetic: without them every API call stops for
+approval, and a session with a dozen of them becomes unusable. The deny rules
+say out loud what the tool already enforces — that reading and writing values is
+the person's job.
+
+No restart needed. Unlike an MCP server, skey is a command, so it works as soon
+as it is installed.
 
 ## Naming
 
