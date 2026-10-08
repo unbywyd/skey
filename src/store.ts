@@ -86,3 +86,34 @@ export function remove(name: string): boolean {
   writeIndex(readIndex().filter((k) => k.name !== name))
   return removed
 }
+
+/**
+ * Ключи удалённого запроса: секрет ссылки, приватный ключ, токен владельца.
+ *
+ * Лежат в том же хранилище, но под отдельным сервисом и вне индекса: это не
+ * ключи пользователя, в `list` и `run` им делать нечего.
+ */
+const REQUEST_SERVICE = 'tscodex-skey-request'
+
+export interface RequestSecrets {
+  secret: string
+  priv: string
+  owner?: string
+}
+
+export function setRequestSecrets(id: string, secrets: RequestSecrets): void {
+  new Entry(REQUEST_SERVICE, id).setPassword(JSON.stringify(secrets))
+}
+
+export function getRequestSecrets(id: string): RequestSecrets | null {
+  const raw = new Entry(REQUEST_SERVICE, id).getPassword()
+  return raw ? (JSON.parse(raw) as RequestSecrets) : null
+}
+
+export function removeRequestSecrets(id: string): void {
+  try {
+    new Entry(REQUEST_SERVICE, id).deletePassword()
+  } catch {
+    // Не было — и ладно.
+  }
+}

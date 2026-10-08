@@ -1,6 +1,6 @@
 {
   "name": "@tscodex/skey",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Keep API tokens out of your AI assistant's context. Stored in the OS keychain, injected only into the process that needs them.",
   "type": "module",
   "bin": { "skey": "dist/cli.js" },

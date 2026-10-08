@@ -1,0 +1,10 @@
+name = "skey-relay"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+routes = [{ pattern = "skey.tscodex.com", custom_domain = true }]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "skey-relay"
+database_id = "65072e45-ddbc-4f95-8a2d-936a1af87950"
+

@@ -11,7 +11,10 @@ import { get } from './store.js'
 import { makeMasker } from './mask.js'
 
 export interface RunOptions {
-  names: string[]
+  /** Имя переменной в окружении команды → имя ключа в хранилище. */
+  env: Record<string, string>
+  /** Ключ, который отдать команде на stdin (gh secret set, wrangler secret put). */
+  stdin?: string
   command: string
   args: string[]
   mask: boolean
@@ -22,9 +25,12 @@ export async function run(options: RunOptions): Promise<number> {
 
   // Достаём всё до запуска: отсутствующий секрет должен остановить нас раньше,
   // чем команда что-то сделает наполовину.
-  for (const name of options.names) secrets[name] = get(name)
+  for (const [variable, stored] of Object.entries(options.env)) secrets[variable] = get(stored)
+  const input = options.stdin ? get(options.stdin) : undefined
 
-  const masker = options.mask ? makeMasker(Object.values(secrets)) : (t: string) => t
+  const values = Object.values(secrets)
+  if (input !== undefined) values.push(input)
+  const masker = options.mask ? makeMasker(values) : (t: string) => t
 
   return new Promise((resolve, reject) => {
     const child = spawn(options.command, options.args, {
@@ -33,8 +39,14 @@ export async function run(options: RunOptions): Promise<number> {
       // неё они не стартуют). Для остального она вредна: переинтерпретирует
       // кавычки, и аргумент с пробелами приезжает разорванным.
       shell: process.platform === 'win32' && /\.(cmd|bat)$|^(npx|npm|yarn|pnpm)$/i.test(options.command),
-      stdio: options.mask ? ['inherit', 'pipe', 'pipe'] : 'inherit',
+      stdio: [input !== undefined ? 'pipe' : 'inherit', options.mask ? 'pipe' : 'inherit', options.mask ? 'pipe' : 'inherit'],
     })
+
+    if (input !== undefined && child.stdin) {
+      // Без перевода строки: часть CLI сохраняет его как часть значения.
+      child.stdin.on('error', () => {})
+      child.stdin.end(input)
+    }
 
     if (options.mask) {
       // Построчно, а не по мере прихода байтов: значение может разорваться
