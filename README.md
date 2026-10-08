@@ -1,63 +1,66 @@
-# @tscodex/skey
+<p align="center">
+  <a href="https://skey.tscodex.com"><img src="https://raw.githubusercontent.com/unbywyd/skey/main/docs/landing.png" alt="skey — your AI agent uses the key, never sees it" width="820"></a>
+</p>
 
-Keep API tokens out of your assistant's context.
+<h1 align="center">skey</h1>
 
-Secrets live in your machine's keychain. Claude sees the names, runs commands
-with them, and never reads the values.
+<p align="center">
+  <b>Your AI agent uses the key. Never sees it.</b><br>
+  API keys live in your OS keychain. Claude Code runs commands with them by name —<br>
+  the value never reaches the chat.
+</p>
 
-Part of [**tscodex**](https://tscodex.com) — a project by
-[unbywyd](https://unbywyd.com) building free, useful software.
+<p align="center">
+  <a href="https://skey.tscodex.com"><b>skey.tscodex.com</b></a> ·
+  <a href="https://www.npmjs.com/package/@tscodex/skey">npm</a> ·
+  <a href="https://github.com/unbywyd/skey">GitHub</a> ·
+  <a href="https://github.com/unbywyd/skey/tree/main/skill">Agent skill</a>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@tscodex/skey"><img src="https://img.shields.io/npm/v/@tscodex/skey?color=C93E12&label=npm" alt="npm version"></a>
+  <img src="https://img.shields.io/badge/license-MIT-111110" alt="MIT">
+  <img src="https://img.shields.io/badge/node-%E2%89%A518-111110" alt="Node 18+">
+  <img src="https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-111110" alt="macOS, Windows, Linux">
+</p>
 
 ---
-
-## The problem
-
-Paste a Cloudflare token into a chat and it is in the transcript. From then on
-the model treats it as compromised, and rightly so — it starts refusing work,
-asking you to rotate the key, warning about exposure. You spend the session
-arguing instead of working.
-
-The token was never meant to be read. It was meant to be *used*.
-
----
-
-## Install
 
 ```bash
 npx @tscodex/skey ui
 ```
 
-Node 18 or newer. Nothing else.
-
----
-
-## Use
-
-**Store a key** — in the browser, or from the terminal:
+That opens a local page where you add your keys. From then on:
 
 ```bash
-npx @tscodex/skey ui          # opens a local page
-skey set CF_API_TOKEN         # or type it here, hidden
+skey run --only STRIPE_SECRET_KEY -- npm run sync
+# key=***MASKED*** · 200 OK
 ```
 
-**Let Claude use it:**
+The agent writes `STRIPE_SECRET_KEY`. The process gets the value. The chat gets nothing.
+
+## Why
+
+Paste a token into a chat and it lives in the transcript forever. The model has
+to treat it as compromised: it refuses to continue, asks you to rotate the key,
+and the session turns into an argument. The token was never meant to be *read* —
+only *used*.
+
+| Where keys leak | What skey does |
+| --- | --- |
+| You paste a token into the chat | the agent runs `skey run --only NAME -- cmd` and never sees the value |
+| The agent asks "paste your key here" | it sends you a request link instead — `skey request` |
+| A tool prints the token back | output is masked: exact value, base64, URL- and JSON-escaped |
+| The key has to go into `.env`, CI or hosting | `skey dotenv`, `skey run --stdin` — moved by name, never read |
+| A colleague sends a key over Telegram | an end-to-end encrypted link that only your machine can open — `--share` |
+| `.env` files and `.pem` keys in the repo | everything sits in the OS keychain, nothing on disk |
+| Leftover keys after a one-off transfer | `skey clean` removes what a request created |
+
+## The agent asks, you fill, it continues
 
 ```bash
-skey run --only CF_API_TOKEN -- curl -H "Authorization: Bearer $CF_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify
-```
-
-The command gets the value in its environment. Claude sees the variable name.
-If the API echoes the token back, the output is masked before it reaches the
-transcript.
-
----
-
-## When the assistant needs a key from you
-
-Instead of "paste your token here", the assistant creates a request:
-
-```bash
-skey request "SMTP_USER:Mailgun login" "SMTP_PASS:Mailgun password" --note "Mailgun → Domain settings → SMTP"
+skey request "SMTP_USER:Mailgun login" "SMTP_PASS:Mailgun password" \
+  --note "Mailgun → Sending → Domain settings → SMTP credentials"
 ```
 
 ```
@@ -67,67 +70,90 @@ Request k7f2qa: SMTP_USER, SMTP_PASS
   Terminal: npx @tscodex/skey fill k7f2qa
 ```
 
-You open the link and get a form with exactly those fields — or run the
-terminal command and it asks for each one in turn, input hidden. The request
-exits as soon as everything is filled, and the assistant carries on: it moves
-the values where they belong without seeing them —
+You open the link and get a form with exactly those fields, or run the terminal
+command and type them one by one with hidden input. Values go straight into the
+keychain. The command exits as soon as everything is filled, and the agent
+carries on by itself — no "tell me when you're done".
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/unbywyd/skey/main/docs/request-local-dark.png" alt="A local key request in dark mode" width="420">
+</p>
+
+Then the agent moves the values where they belong, without reading them:
 
 ```bash
-skey dotenv .env --only SMTP_USER,SMTP_PASS                    # into a .env file
-skey run --stdin SMTP_PASS -- gh secret set SMTP_PASS          # into a CLI that reads stdin
-skey run --only MAIL_PASSWORD=SMTP_PASS -- npm run deploy      # under another variable name
+skey dotenv .env --only SMTP_USER,SMTP_PASS                  # into a .env file
+skey run --stdin SMTP_PASS -- gh secret set SMTP_PASS        # into a CLI that reads stdin
+skey run --only MAIL_PASSWORD=SMTP_PASS -- npm run deploy    # under another name
+skey clean k7f2qa                                            # one-off? remove them after
 ```
 
-— and, if the keychain was only a stopover, removes them:
+## The key is on someone else's computer
+
+Add `--share`, and the request gets a link that works anywhere:
 
 ```bash
-skey clean k7f2qa      # deletes the keys this request created
+skey request "STRIPE_SECRET_KEY:Stripe secret key" "DATABASE_URL:Production database URL" \
+  --share --from "Artyom"
 ```
 
----
+Send the link to whoever has the keys. They open it in a browser — no account,
+nothing to install — or answer from their terminal with
+`npx @tscodex/skey fill "<link>"`. The reply arrives on your machine by itself.
 
-## When the key is on someone else's computer
+<p align="center">
+  <img src="https://raw.githubusercontent.com/unbywyd/skey/main/docs/request-remote.png" alt="A shared key request: only the requester's computer can read the reply" width="460">
+</p>
 
-Add `--share` and the request gets a link that works anywhere:
+- **The server reads nothing.** The secret sits after `#` in the link, and
+  browsers never send that part. The request is encrypted with it, and the reply
+  is encrypted for a key whose private half never leaves your keychain
+  (ECDH P-256 + AES-256-GCM, Web Crypto, no libraries).
+- **The link can answer, not read.** A link that passed through a chat or an
+  assistant is fine: only your computer can open the reply.
+- **One request, one answer.** The first reply closes it. Links expire after
+  24 hours (`--ttl`, up to 7 days), and the ciphertext is deleted the moment you
+  have it.
+- **No server allowed?** `--offline` puts the whole request in the link. Instead
+  of sending, they get an encrypted reply text (`skey1.…`) to paste back in any
+  chat, and you take it with `skey import`.
+
+The relay is a small open-source Cloudflare Worker in [`relay/`](relay/). Run
+your own and point at it with `--relay https://…` or `SKEY_RELAY`.
+
+## Set up Claude Code
+
+Install the [agent skill](skill/SKILL.md) so Claude knows how to ask for keys,
+move them and clean up:
 
 ```bash
-skey request "DB_URL:Production database" "STRIPE_KEY:Stripe secret key" --share --from "Artyom"
+mkdir -p ~/.claude/skills/skey
+curl -o ~/.claude/skills/skey/SKILL.md https://raw.githubusercontent.com/unbywyd/skey/main/skill/SKILL.md
 ```
 
+Then let it run skey without approval prompts — but never read or type values.
+Merge into `~/.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(skey run:*)", "Bash(skey list:*)", "Bash(skey request:*)", "Bash(skey wait:*)",
+      "Bash(skey dotenv:*)", "Bash(skey clean:*)", "Bash(skey import:*)"
+    ],
+    "deny": ["Bash(skey export:*)", "Bash(skey set:*)", "Bash(skey fill:*)"]
+  }
+}
 ```
-  Share:    https://skey.tscodex.com/r/k7f2qa#Xp3…
-            works on any computer, end-to-end encrypted; the reply arrives here by itself
-```
 
-Send it to whoever has the keys. They open it in a browser (nothing to install),
-or answer from their terminal with `npx @tscodex/skey fill "<link>"`. The values
-are encrypted on their side, for your computer only. The reply arrives here by
-itself and goes into your keychain, just like a local one.
-
-- **The server cannot read anything.** The secret lives after `#` in the link,
-  and browsers never send that part. The request description is encrypted with
-  it. The reply is encrypted with a key whose private half never leaves your
-  keychain (ECDH P-256 + AES-256-GCM, Web Crypto).
-- **The link can answer, not read.** Whoever sees it can reply. Only your
-  computer can open the reply, so a link that passed through a chat or an
-  assistant is fine.
-- **One request, one answer.** The first reply closes it. The link expires
-  after 24 hours (`--ttl`, up to 7 days), and the server deletes the ciphertext
-  as soon as you have it.
-- **No server?** `--offline` puts the whole request in the link. Instead of
-  sending, the page gives them an encrypted reply text (`skey1.…`) to send
-  back any way they like. You take it with `skey import`.
-
-The relay is a small Cloudflare Worker in [`relay/`](relay/). Run your own and
-point at it with `--relay https://…` or `SKEY_RELAY`.
-
----
+`export` and `fill` also refuse to run without a real terminal, so an assistant
+cannot reach a value even if a rule is missing.
 
 ## Commands
 
 | | |
-|---|---|
-| `skey ui` | manage keys in the browser |
+| --- | --- |
+| `skey ui [--no-open]` | manage keys in the browser |
 | `skey set NAME` | store one — typed, never passed as an argument |
 | `skey list` | names and dates, never values |
 | `skey rm NAME...` | delete one or more |
@@ -136,72 +162,37 @@ point at it with `--relay https://…` or `SKEY_RELAY`.
 | `skey run --stdin NAME -- cmd` | pipe a value into the command's stdin |
 | `skey dotenv FILE --only A,B` | write values into a .env file (updates or appends) |
 | `skey request A "B:Label" "C?:Optional"` | ask the person; prints a link and an ID, waits until filled |
-| `skey fill [ID]` | fill a request in the terminal, field by field — needs a real terminal |
-| `skey request ... --share` | same, plus a link for another computer (end-to-end encrypted) |
-| `skey fill "<link>"` | answer someone's link from the terminal |
+| `skey request ... --share` | same, plus a link for another computer |
+| `skey fill [ID \| "<link>"]` | answer a request in the terminal, field by field |
 | `skey import skey1.…` | take an encrypted reply someone sent back |
 | `skey wait ID` | wait for a request created earlier |
 | `skey clean ID` | close a request and delete the keys it created |
 | `skey export NAME` | print a value — needs a real terminal |
 
----
+## What it does not do
 
-## Keeping it that way
-
-Add this to `~/.claude/settings.json` so the assistant can run commands but not
-read or replace secrets:
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(skey run:*)", "Bash(skey list:*)", "Bash(skey request:*)",
-      "Bash(skey wait:*)", "Bash(skey dotenv:*)", "Bash(skey clean:*)"
-    ],
-    "deny": ["Bash(skey export:*)", "Bash(skey set:*)", "Bash(skey fill:*)"]
-  }
-}
-```
-
-`export` and `fill` also refuse to run without a real terminal, so an assistant cannot
-reach a value even if the rule is missing.
-
----
-
-## What this does and does not protect against
-
-**It keeps tokens out of the transcript.** That is the whole point, and it works:
-the value is read from the keychain and handed to one child process.
-
-**Masking is best-effort.** Exact matches are caught, along with base64,
-URL-encoded and JSON-escaped forms. A value split across a boundary or encoded
-some other way can slip through.
-
-**It does not sandbox the command you run.** `skey run` hands the secret to
-whatever you told it to run. A malicious program gets the token like any other
-program would.
-
-**The browser page is local.** It listens on `127.0.0.1`, needs a one-time token
-from the URL, and dies with the terminal. It is not a defence against malware
-already on the machine — that could call `skey run` directly.
-
----
+- **It does not sandbox the command.** `skey run` hands the secret to whatever
+  you run. A malicious program gets it like any other program would.
+- **Masking is best-effort.** A value split across chunks or encoded some other
+  way can slip through.
+- **The local pages are local.** They listen on `127.0.0.1`, need a one-time
+  token from the URL, and die with the terminal. They are no defence against
+  malware already on the machine.
 
 ## Where things are stored
 
 | | |
-|---|---|
+| --- | --- |
 | macOS | Keychain |
 | Windows | Credential Manager |
 | Linux | Secret Service (GNOME Keyring, KWallet) |
 
-Names and dates go in `~/.tscodex/skey-index.json` — system keychains cannot be
-listed by service, so the index exists to make `list` possible. Open requests
-live in `~/.tscodex/skey-requests/` — field names, labels and the note, removed
-after a week. No values in either.
+Names and dates go in `~/.tscodex/skey-index.json`, because system keychains
+cannot be listed. Open requests live in `~/.tscodex/skey-requests/`: field
+names, labels and the note, removed after a week. No values in either.
 
 ---
 
-## License
-
-MIT
+<p align="center">
+  Part of <a href="https://tscodex.com"><b>tscodex</b></a> — free, useful software by <a href="https://unbywyd.com">unbywyd</a>. MIT.
+</p>

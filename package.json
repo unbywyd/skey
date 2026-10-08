@@ -1,20 +1,49 @@
 {
   "name": "@tscodex/skey",
-  "version": "0.3.0",
-  "description": "Keep API tokens out of your AI assistant's context. Stored in the OS keychain, injected only into the process that needs them.",
+  "version": "0.3.1",
+  "description": "Your AI agent uses the key, never sees it. API keys in the OS keychain for Claude Code and AI agents, plus end-to-end encrypted key requests between people.",
   "type": "module",
-  "bin": { "skey": "dist/cli.js" },
-  "files": ["dist"],
-  "engines": { "node": ">=18" },
+  "bin": {
+    "skey": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": ["secrets", "keychain", "credentials", "claude", "ai", "tokens"],
-  "author": { "name": "unbywyd", "url": "https://unbywyd.com" },
-  "homepage": "https://tscodex.com",
-  "repository": { "type": "git", "url": "git+https://github.com/unbywyd/skey.git" },
-  "bugs": { "url": "https://github.com/unbywyd/skey/issues" },
+  "keywords": [
+    "secrets",
+    "api-keys",
+    "keychain",
+    "credentials",
+    "claude",
+    "claude-code",
+    "ai-agents",
+    "llm",
+    "dotenv",
+    "env",
+    "encryption",
+    "end-to-end",
+    "cli",
+    "tokens"
+  ],
+  "author": {
+    "name": "unbywyd",
+    "url": "https://unbywyd.com"
+  },
+  "homepage": "https://skey.tscodex.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unbywyd/skey.git"
+  },
+  "bugs": {
+    "url": "https://github.com/unbywyd/skey/issues"
+  },
   "license": "MIT",
   "dependencies": {
     "@napi-rs/keyring": "^1.3.0"
