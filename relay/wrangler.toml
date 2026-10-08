@@ -8,3 +8,7 @@ binding = "DB"
 database_name = "skey-relay"
 database_id = "65072e45-ddbc-4f95-8a2d-936a1af87950"
 
+
+# Статика: тур skey.tscodex.com/tour. Всё остальное по-прежнему отвечает Worker.
+[assets]
+directory = "./public"

@@ -1,0 +1,9 @@
+{
+  "name": "skey-video",
+  "private": true,
+  "type": "module",
+  "description": "Builds the skey demo video and storyboard from real runs of skey.",
+  "devDependencies": {
+    "playwright-core": "1.56.0"
+  }
+}

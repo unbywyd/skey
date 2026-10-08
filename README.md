@@ -12,6 +12,7 @@
 
 <p align="center">
   <a href="https://skey.tscodex.com"><b>skey.tscodex.com</b></a> ·
+  <a href="https://skey.tscodex.com/tour"><b>Take the tour</b></a> ·
   <a href="https://www.npmjs.com/package/@tscodex/skey">npm</a> ·
   <a href="https://github.com/unbywyd/skey">GitHub</a> ·
   <a href="https://github.com/unbywyd/skey/tree/main/skill">Agent skill</a>

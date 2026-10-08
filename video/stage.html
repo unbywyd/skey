@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>skey — demo stage</title>
+<!--
+  Сцена демо-ролика: 1920×1080, подпись сверху, терминал агента слева,
+  окно браузера справа. Состояние кадра задаёт render(scene) — его зовут
+  скрипты раскадровки и записи. Стиль — как у лендинга skey.tscodex.com.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F4F2EC;--ink:#111110;--ink2:#4A4843;--muted:#8A857A;--ver:#C93E12;--ver-soft:#FBE3D8;--night:#0F0F0E;--night2:#1D1C1A;--term-text:#ECEAE4;--term-dim:#8C887E;--term-ok:#71C28F;--term-ver:#FF7A45;--sans:"Geist",ui-sans-serif,system-ui,sans-serif;--mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+.stage{position:absolute;inset:0;padding:56px 56px 48px;display:flex;flex-direction:column}
+.cap{height:150px;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:28px}
+.chap{font:500 18px/1 var(--mono);color:var(--ver);margin:0 0 14px;display:flex;gap:14px;align-items:center}
+.chap .dots{display:flex;gap:6px}
+.chap .dots i{width:28px;height:4px;border-radius:2px;background:#D9D5CB}
+.chap .dots i.on{background:var(--ver)}
+.head{font:600 44px/1.08 var(--mono);letter-spacing:-.045em;margin:0}
+.panes{flex:1;display:flex;gap:32px;min-height:0}
+.win{border-radius:16px;overflow:hidden;display:flex;flex-direction:column;min-height:0;box-shadow:0 1px 2px rgba(17,17,16,.06),0 24px 60px rgba(17,17,16,.14)}
+.bar{height:44px;flex-shrink:0;display:flex;align-items:center;gap:14px;padding:0 16px}
+.lights{display:flex;gap:8px}
+.lights i{width:12px;height:12px;border-radius:50%;background:#3A3733}
+.wtitle{font:500 14px var(--mono);color:var(--term-dim)}
+/* терминал */
+.term{width:820px;background:var(--night);color:var(--term-text)}
+.term.wide{width:auto;flex:1}
+.term .bar{background:var(--night2)}
+.tbody{flex:1;padding:22px 26px;font:17px/1.62 var(--mono);white-space:pre-wrap;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.l{min-height:1.62em}
+.l.user{color:var(--term-text);background:#26251F;border-radius:8px;padding:6px 12px;margin:6px 0 10px;align-self:flex-start}
+.l.user::before{content:"› ";color:var(--term-ver)}
+.l.agent{color:var(--term-text)}
+.l.agent::before{content:"● ";color:var(--term-ver)}
+.l.cmd::before{content:"$ ";color:var(--term-ver)}
+.l.cmd{color:#fff;font-weight:500}
+.l.out{color:var(--term-dim)}
+.l.ok{color:var(--term-ok)}
+.l.prompt{color:var(--term-text)}
+.l.link{color:#fff}
+.mask{background:var(--term-text);color:var(--night);padding:1px 7px;border-radius:4px;font-weight:600}
+.u{text-decoration:underline;text-decoration-color:var(--term-ver);text-underline-offset:4px}
+.cursor{display:inline-block;width:.6em;height:1.15em;vertical-align:-.2em;background:var(--term-ver);margin-left:2px}
+/* браузер */
+.browser{flex:1;background:#fff}
+.browser .bar{background:#ECE9E1}
+.browser .lights i{background:#D6D2C7}
+.url{flex:1;height:30px;border-radius:8px;background:#fff;display:flex;align-items:center;gap:8px;padding:0 12px;font:500 14px var(--mono);color:var(--ink2);white-space:nowrap;overflow:hidden}
+.url svg{flex-shrink:0}
+.who-tag{font:600 12px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--ink);padding:7px 10px;border-radius:999px}
+.view{flex:1;min-height:0;position:relative;background:var(--paper)}
+.view img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+/* мессенджер */
+.chat{flex:1;background:#fff;display:flex;flex-direction:column}
+.chat .bar{background:#ECE9E1}
+.thread{flex:1;padding:32px;display:flex;flex-direction:column;gap:14px;justify-content:flex-end;background:#F7F5F0}
+.bubble{max-width:78%;padding:14px 18px;border-radius:18px;font:19px/1.45 var(--sans)}
+.bubble.me{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:6px}
+.bubble.them{align-self:flex-start;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);border-bottom-left-radius:6px}
+.bubble .lnk{font:500 16px/1.4 var(--mono);color:#FFB08F;word-break:break-all;display:block;margin-top:6px}
+.bubble small{display:block;font:13px var(--sans);opacity:.6;margin-top:6px}
+/* титры */
+.card{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 140px;background:var(--paper)}
+.card .eye{font:500 22px/1 var(--mono);color:var(--ver);margin:0 0 34px}
+.card h1{font:600 128px/.95 var(--mono);letter-spacing:-.06em;margin:0}
+.card h1 .q{color:var(--muted)}
+.card p{font:400 30px/1.4 var(--sans);color:var(--ink2);max-width:1100px;margin:48px 0 0}
+.card .cmdline{display:inline-flex;align-items:center;gap:14px;background:var(--ink);color:var(--paper);font:500 30px var(--mono);padding:18px 28px;border-radius:14px;margin-top:56px;align-self:flex-start}
+.card .cmdline b{color:var(--ver);font-weight:500}
+.card .site{font:600 30px var(--mono);color:var(--ink);margin-top:28px}
+.logo{position:absolute;left:140px;top:72px;display:flex;align-items:center;gap:12px;font:700 30px/1 var(--mono);letter-spacing:-.04em}
+.mark{position:absolute;right:120px;bottom:70px;font:700 220px/.8 var(--mono);letter-spacing:-.08em;display:flex;align-items:flex-end;gap:.04em;color:var(--ink)}
+.mark i{display:block;width:1.15em;height:.56em;background:var(--ver)}
+.card .credit{font:500 20px var(--mono);color:var(--ink2);margin-top:44px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="cap"><p class="chap" id="chap"></p><h2 class="head" id="head"></h2></div>
+  <div class="panes" id="panes"></div>
+</div>
+<div class="card hidden" id="card"></div>
+
+<script>
+const LOGO_SVG = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="6.5" cy="12" r="3.75" stroke="#111110" stroke-width="2.2"/><path d="M10.25 12H22" stroke="#111110" stroke-width="2.2" stroke-linecap="round"/><rect x="14" y="14" width="8" height="4.5" rx="1" fill="#C93E12"/></svg>'
+const LOCK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4A4843" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+/** Строка терминала: ***MASKED*** — плашкой, [[…]] — подчёркнутая ссылка. */
+function line(l) {
+  let html = esc(l.s || '')
+    .replace(/\*\*\*MASKED\*\*\*/g, '<span class="mask">***MASKED***</span>')
+    .replace(/\[\[(.+?)\]\]/g, '<span class="u">$1</span>')
+  if (l.cursor) html += '<span class="cursor"></span>'
+  return '<div class="l ' + (l.t || 'out') + '">' + html + '</div>'
+}
+
+function terminal(t, wide) {
+  return '<div class="win term' + (wide ? ' wide' : '') + '"><div class="bar"><span class="lights"><i></i><i></i><i></i></span>' +
+    '<span class="wtitle">' + esc(t.title) + '</span></div><div class="tbody">' + t.lines.map(line).join('') + '</div></div>'
+}
+
+function browser(b) {
+  return '<div class="win browser"><div class="bar"><span class="lights"><i></i><i></i><i></i></span>' +
+    '<span class="url">' + (b.secure ? LOCK : '') + esc(b.url) + '</span>' +
+    (b.who ? '<span class="who-tag">' + esc(b.who) + '</span>' : '') + '</div>' +
+    '<div class="view">' + (b.img ? '<img src="' + esc(b.img) + '" alt="">' : '') + '</div></div>'
+}
+
+function chat(c) {
+  return '<div class="win chat"><div class="bar"><span class="lights"><i></i><i></i><i></i></span>' +
+    '<span class="wtitle" style="color:#4A4843">' + esc(c.title) + '</span></div><div class="thread">' +
+    c.messages.map((m) => '<div class="bubble ' + m.from + '">' + esc(m.text) +
+      (m.link ? '<span class="lnk">' + esc(m.link) + '</span>' : '') +
+      (m.meta ? '<small>' + esc(m.meta) + '</small>' : '') + '</div>').join('') + '</div></div>'
+}
+
+window.render = function (scene) {
+  const card = document.getElementById('card')
+  const stage = document.getElementById('stage')
+  if (scene.layout === 'title' || scene.layout === 'outro') {
+    stage.classList.add('hidden')
+    card.classList.remove('hidden')
+    card.innerHTML = scene.layout === 'title'
+      ? '<div class="logo">' + LOGO_SVG + 'skey</div>' +
+        '<p class="eye">' + esc(scene.eyebrow) + '</p><h1>' + scene.title + '</h1><p>' + esc(scene.text) + '</p>'
+      : '<div class="logo">' + LOGO_SVG + 'skey</div>' +
+        '<p class="eye">' + esc(scene.eyebrow) + '</p><h1 style="font-size:96px">' + scene.title + '</h1>' +
+        '<div class="cmdline"><b>$</b>' + esc(scene.cmd) + '</div><div class="site">' + esc(scene.site) + '</div>' +
+        (scene.credit ? '<div class="credit">' + esc(scene.credit) + '</div>' : '') +
+        '<div class="mark">skey<i></i></div>'
+    return
+  }
+  card.classList.add('hidden')
+  stage.classList.remove('hidden')
+  const [n, total] = scene.chapter || [0, 3]
+  document.getElementById('chap').innerHTML =
+    '<span class="dots">' + Array.from({ length: total }, (_, i) => '<i class="' + (i < n ? 'on' : '') + '"></i>').join('') + '</span>' +
+    esc(scene.chapterLabel || '')
+  document.getElementById('head').textContent = scene.caption
+  let panes = ''
+  if (scene.term) panes += terminal(scene.term, !scene.browser && !scene.chat && !scene.term2)
+  if (scene.term2) panes += terminal(scene.term2, true)
+  if (scene.browser) panes += browser(scene.browser)
+  if (scene.chat) panes += chat(scene.chat)
+  document.getElementById('panes').innerHTML = panes
+}
+</script>
+</body>
+</html>
