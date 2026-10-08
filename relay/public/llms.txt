@@ -1,0 +1,57 @@
+# skey — API keys for AI agents
+
+I found an open-source tool called skey. Please explain what it does for me and help me set it up with you. Everything about it is below.
+
+Site: https://skey.tscodex.com · Tour: https://skey.tscodex.com/tour
+npm: @tscodex/skey · GitHub: https://github.com/unbywyd/skey · License: MIT
+
+## What it is
+
+skey keeps API keys and passwords in the operating system's keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service). AI agents such as Claude Code use them by name — the value never enters the chat, so the agent never has to treat a key as leaked.
+
+## What it can do
+
+- Use a key by name: `skey run --only STRIPE_SECRET_KEY -- npm run sync`. The value goes only into that process's environment. If the program prints it back, the output shows `***MASKED***`.
+- Ask for a key instead of "paste it here": `skey request "SMTP_PASS:Mailgun password" --note "where to find it"`. A local page opens with exactly those fields (or answer in the terminal with `skey fill`). Values go straight into the keychain; the agent continues by itself and sees only names.
+- Get a key from someone on another computer: `skey request ... --share` prints a link. It is end-to-end encrypted in their browser (ECDH P-256 + AES-256-GCM); the relay sees only ciphertext; one reply per link; the link expires in 24 h. `--offline` works without any server: they send back an encrypted text, you run `skey import`.
+- Move keys where they belong without reading them: `skey dotenv .env --only A,B`, `skey run --stdin NAME -- gh secret set NAME`, `skey run --only VAR=STORED -- cmd`.
+- Manage keys in the browser: `skey ui` (names and dates only, never values). Clean up after a one-off transfer: `skey clean <request id>`.
+
+## Install
+
+Node 18+ on macOS, Windows or Linux:
+
+    npx @tscodex/skey ui          # opens a local page to add your keys
+    npm i -g @tscodex/skey        # or install the `skey` command globally
+
+## The agent skill (Claude Code)
+
+The skill teaches the agent to ask for keys with `skey request`, move them without reading, and clean up:
+
+    mkdir -p ~/.claude/skills/skey
+    curl -o ~/.claude/skills/skey/SKILL.md https://raw.githubusercontent.com/unbywyd/skey/main/skill/SKILL.md
+
+Then allow skey without approval prompts, but never reading or typing values. Merge into ~/.claude/settings.json:
+
+    {
+      "permissions": {
+        "allow": ["Bash(skey run:*)", "Bash(skey list:*)", "Bash(skey request:*)", "Bash(skey wait:*)",
+                  "Bash(skey dotenv:*)", "Bash(skey import:*)", "Bash(skey clean:*)"],
+        "deny": ["Bash(skey export:*)", "Bash(skey set:*)", "Bash(skey fill:*)"]
+      }
+    }
+
+`export`, `fill` and `run --no-mask` also refuse to work without a real terminal, so an agent cannot read a value even if a rule is missing.
+
+## Limits, honestly
+
+- `skey run` is not a sandbox: the command you run gets the secret.
+- Masking catches the value and common encodings; a command that transforms the value first can still print it.
+- A value written to a file with `skey dotenv` is a plain file.
+- The shared page is served by the relay; if you do not trust it, answer from the terminal (`skey fill "<link>"`) or run your own relay.
+
+## What I would like you to do
+
+1. In two sentences, tell me what skey would solve for me.
+2. Check whether it is installed: `npx -y @tscodex/skey list`.
+3. Offer to install the skill and the permission rules above, and show me how to store my first key.
