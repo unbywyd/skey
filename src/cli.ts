@@ -251,6 +251,11 @@ switch (command) {
 
     const only = flag(flags, '--only')
     const stdin = flag(flags, '--stdin')
+    // Без маскировки значение уйдёт в вывод, а значит, и в чат. Это решение
+    // человека: как export и fill, снимать маскировку можно только с живой клавиатуры.
+    if (flags.includes('--no-mask') && !process.stdin.isTTY) {
+      fail('--no-mask needs a real terminal. An assistant cannot unmask values.', 2)
+    }
     if (stdin !== undefined && !NAME_PATTERN.test(stdin)) fail(`Invalid name "${stdin}" after --stdin.`)
 
     // Без --only отдаём всё — но не тогда, когда ключ просили только на stdin.
@@ -305,12 +310,19 @@ switch (command) {
     let shareLink = ''
     try {
       request = createRequest(specs, note)
-      if (remote) {
-        const ttl = Math.min(Math.max(Number(flag(rest, '--ttl') ?? 24) || 24, 1), 168)
-        shareLink = await share(request, { relay: flag(rest, '--relay') ?? DEFAULT_RELAY, offline, ttlHours: ttl, from: flag(rest, '--from') })
-      }
     } catch (error) {
       fail(error instanceof Error ? error.message : 'Failed.')
+    }
+    if (remote) {
+      try {
+        const ttl = Math.min(Math.max(Number(flag(rest, '--ttl') ?? 24) || 24, 1), 168)
+        shareLink = await share(request, { relay: flag(rest, '--relay') ?? DEFAULT_RELAY, offline, ttlHours: ttl, from: flag(rest, '--from') })
+      } catch (error) {
+        // Сервер не принял — запрос без ссылки никому не нужен, убираем его целиком.
+        await closeRemote(request.id)
+        clearRequest(request.id)
+        fail(error instanceof Error ? error.message : 'Failed.')
+      }
     }
 
     const names = request.fields.map((f) => f.name).join(', ')

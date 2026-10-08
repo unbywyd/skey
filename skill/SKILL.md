@@ -252,7 +252,15 @@ you would without skey.
 Masking covers exact matches plus base64, URL-encoded and JSON-escaped forms,
 for values of 6+ characters. A value that comes back split or encoded
 differently can still appear in output — if you ever see something that looks
-like a live token in a result, say so rather than passing it along.
+like a live token in a result, say so rather than passing it along. Never write
+a command that transforms a value to get it past the mask, and never try
+`--no-mask`: it refuses without a real terminal, and the attempt is the same
+as reading the value.
+
+A request link opened in a browser runs code served by the relay. If the person
+does not trust the relay, suggest answering from the terminal instead
+(`npx @tscodex/skey fill "<link>"`), where the encryption runs in the CLI on
+their own machine.
 
 The local request link carries a one-time token and works only while the
 request is waiting. It can only write the fields of that request and never

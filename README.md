@@ -173,8 +173,18 @@ cannot reach a value even if a rule is missing.
 
 - **It does not sandbox the command.** `skey run` hands the secret to whatever
   you run. A malicious program gets it like any other program would.
-- **Masking is best-effort.** A value split across chunks or encoded some other
-  way can slip through.
+- **Masking is best-effort.** It catches the value and its common encodings. A
+  command that transforms the value first — reverses it, splits it — can still
+  print it. Judge commands as carefully as you would without skey. Turning
+  masking off (`--no-mask`) works only from a real terminal.
+- **A file is a file.** A value written with `skey dotenv` sits in that file in
+  the clear, and whoever can read the file — an assistant included — can read
+  the value. Keep such files in `.gitignore`.
+- **The shared page comes from the relay.** Encryption happens in the browser,
+  but the page's code is served by the relay, so whoever runs the relay could
+  change that code. If you do not trust the relay, answer from the terminal
+  (`skey fill "<link>"`): the encryption then runs in the skey CLI on your own
+  machine. Or run your own relay.
 - **The local pages are local.** They listen on `127.0.0.1`, need a one-time
   token from the URL, and die with the terminal. They are no defence against
   malware already on the machine.

@@ -9,8 +9,9 @@
  *     её секрета, а здесь лежит лишь его хеш;
  *   — забрать ответ и удалить запрос может только автор: токен владельца;
  *   — один запрос — один ответ: второй получает 409;
- *   — по истечении срока строка стирается (при следующем новом запросе), а сразу
- *     после того, как ответ забрали, — немедленно.
+ *   — по истечении срока строка стирается (при следующем запросе или ответе), а
+ *     сразу после того, как ответ забрали, — немедленно;
+ *   — новых запросов не больше 30 в час с одного адреса.
  */
 
 import { REQUEST_PAGE } from '../../src/request-page.js'
@@ -26,6 +27,8 @@ const MAX_META = 16 * 1024
 const MAX_ANSWER = 64 * 1024
 const MAX_TTL = 7 * 24 * 3600 * 1000
 const MIN_TTL = 5 * 60 * 1000
+/** Новых запросов в час с одного адреса: больше человеку не нужно, а бесплатные лимиты D1 так не выбрать. */
+const RATE_PER_HOUR = 30
 
 const PAGE_HEADERS = {
   'Content-Type': 'text/html; charset=utf-8',
@@ -75,6 +78,17 @@ async function body<T>(req: Request, limit: number): Promise<T | null> {
 const isBox = (v: unknown): boolean =>
   typeof v === 'object' && v !== null && typeof (v as any).iv === 'string' && typeof (v as any).ct === 'string'
 
+/**
+ * Стереть просроченное. Зовём при создании запроса и при ответе: шифр не должен
+ * лежать дольше срока, а расписание (cron) на бесплатном тарифе требует лишней настройки.
+ */
+async function sweep(env: Env, now: number): Promise<void> {
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM requests WHERE expires_at < ?').bind(now),
+    env.DB.prepare('DELETE FROM rate WHERE bucket < ?').bind(Math.floor(now / 3_600_000) - 1),
+  ])
+}
+
 async function create(req: Request, env: Env): Promise<Response> {
   const input = await body<{ id: string; meta: unknown; submitHash: string; ownerHash: string; expiresAt: number }>(req, MAX_META)
   if (!input || !ID.test(input.id) || !isBox(input.meta) || !TOKEN.test(input.submitHash) || !TOKEN.test(input.ownerHash)) {
@@ -84,9 +98,17 @@ async function create(req: Request, env: Env): Promise<Response> {
   const now = Date.now()
   const expiresAt = Math.min(Math.max(Number(input.expiresAt) || 0, now + MIN_TTL), now + MAX_TTL)
 
-  // Просроченное стираем здесь, при каждом новом запросе: шифр не должен лежать
-  // дольше срока, а расписание (cron) на бесплатном тарифе требует лишней настройки.
-  await env.DB.prepare('DELETE FROM requests WHERE expires_at < ?').bind(now).run()
+  // Счётчик по адресу. Сам адрес не храним — только хеш, и только на этот час.
+  const bucket = Math.floor(now / 3_600_000)
+  const ip = req.headers.get('CF-Connecting-IP') ?? 'unknown'
+  const rate = await env.DB.prepare(
+    'INSERT INTO rate (key, bucket, n) VALUES (?, ?, 1) ON CONFLICT(key) DO UPDATE SET n = n + 1 RETURNING n',
+  )
+    .bind(`${await sha256('skey-rate:' + ip)}:${bucket}`, bucket)
+    .first<{ n: number }>()
+  if (rate && rate.n > RATE_PER_HOUR) return json(429, { error: 'Too many requests from this address. Try again in an hour.' })
+
+  await sweep(env, now)
 
   try {
     await env.DB.prepare(
@@ -167,6 +189,7 @@ async function route(req: Request, env: Env): Promise<Response> {
       .bind(JSON.stringify(a), Date.now(), id)
       .run()
     if (!result.meta.changes) return json(409, { error: 'Already answered.' })
+    await sweep(env, Date.now())
     return json(201, { ok: true })
   }
 

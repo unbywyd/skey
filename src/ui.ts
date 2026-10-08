@@ -73,9 +73,21 @@ export function serveRequest(id: string, open: boolean, closesAt: number | null 
   })
 }
 
+const CSP =
+  "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; " +
+  "img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+
 function handler(token: string, requestId: string | null, closesAt: number | null) {
   return async (req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => {
     const url = new URL(req.url ?? '/', 'http://127.0.0.1')
+
+    // Те же заголовки, что у ретранслятора: страница — один файл, чужие скрипты,
+    // рамки и утечка адреса с токеном через Referer ей не нужны.
+    res.setHeader('Content-Security-Policy', CSP)
+    res.setHeader('Referrer-Policy', 'no-referrer')
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    res.setHeader('X-Frame-Options', 'DENY')
+    res.setHeader('Cache-Control', 'no-store')
 
     const provided = url.searchParams.get('t') ?? req.headers['x-skey-token']
     if (typeof provided !== 'string' || !sameToken(provided, token)) {

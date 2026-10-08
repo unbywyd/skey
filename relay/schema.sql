@@ -10,3 +10,10 @@ CREATE TABLE IF NOT EXISTS requests (
   answered_at INTEGER
 );
 CREATE INDEX IF NOT EXISTS requests_expires ON requests (expires_at);
+
+-- Счётчик новых запросов по хешу адреса за час. Строки старше часа стираются.
+CREATE TABLE IF NOT EXISTS rate (
+  key    TEXT PRIMARY KEY,    -- хеш адреса и номер часа
+  bucket INTEGER NOT NULL,    -- номер часа с начала эпохи
+  n      INTEGER NOT NULL
+);

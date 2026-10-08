@@ -4,6 +4,10 @@
  * Значения нигде не показываются: их не отдаёт сервер, и запрашивать их
  * странице незачем. Поле ввода — единственное место, где значение существует,
  * и оно очищается сразу после отправки.
+ *
+ * Порядок на странице выбран под длинный список: форма добавления сверху,
+ * под ней несколько последних ключей и «показать все». Замена — прямо в
+ * строке, чтобы не уводить человека в другой конец страницы.
  */
 
 import { THEME_CSS, ICON, LOGO, FAVICON } from './theme.js'
@@ -15,6 +19,9 @@ export const PAGE = `<!doctype html>
 <title>skey — your keys</title>
 ${FAVICON}
 <style>${THEME_CSS}
+.form{padding:16px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto;gap:12px;align-items:start;margin-top:28px}
+.form .lbl{font-size:13px;margin-bottom:6px}
+.form .btn{height:48px;margin-top:25px}
 .list{display:flex;flex-direction:column;gap:4px}
 .row{display:flex;align-items:center;gap:14px;padding:10px 10px 10px 18px;min-height:62px;background:var(--surface);border-radius:10px;transition:background var(--dur)}
 .row .kn{font:600 14px/1.35 var(--mono);color:var(--text)}
@@ -23,9 +30,14 @@ ${FAVICON}
 .row.saved .meta{color:var(--ok)}
 .row.confirm{background:var(--danger-soft);flex-wrap:wrap}
 .row.confirm .meta{color:var(--danger)}
-.row.replacing{background:var(--accent-soft)}
-.row.replacing .rd{background:var(--accent)}
+.row.replacing{background:var(--accent-soft);flex-wrap:wrap;padding:12px 12px 12px 18px}
 .row .badge{margin-top:4px}
+.rform{flex-basis:100%;display:flex;gap:8px;align-items:flex-start}
+.rform .fld{flex:1;min-width:0}
+.rform .in{background:var(--surface)}
+.rform .btn{height:48px}
+.rhelp{flex-basis:100%;font-size:13px;color:var(--danger);font-weight:500;display:flex;gap:6px;align-items:center}
+.rhelp:empty{display:none}
 .grow{flex:1;min-width:0}
 .acts{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .narrow{display:none}
@@ -33,16 +45,15 @@ mark{background:var(--accent-soft);color:var(--accent);border-radius:2px}
 .filter{height:34px;width:220px;border:0;background:var(--surface);color:var(--text);border-radius:8px;padding:0 10px;font:13px var(--sans);text-transform:none;letter-spacing:0;outline:none}
 .filter:focus{box-shadow:0 0 0 2px var(--accent)}
 .filter::placeholder{color:var(--faint)}
-.form{padding:20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
-.formfoot{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.formnote{font-size:13px;color:var(--muted)}
-.formbtns{display:flex;gap:8px;margin-left:auto}
+.more{display:flex;justify-content:center;margin-top:8px}
 .empty{background:var(--sunken);border-radius:14px;padding:36px 28px;display:flex;gap:28px;align-items:center}
 .slots{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
 .slot{display:flex;align-items:center;gap:10px}
 .slot i{display:block;height:9px;border-radius:2px;background:var(--line-strong)}
 .chip{display:inline-block;font:600 12.5px/1 var(--mono);padding:7px 9px;border-radius:6px;background:var(--surface);margin:0 6px 6px 0}
 @media (max-width:560px){
+  .form{grid-template-columns:1fr}
+  .form .btn{margin-top:0;width:100%}
   .sec{flex-wrap:wrap}
   #filterbox{flex-basis:100%}
   .filter{width:100%;height:44px;font-size:15px}
@@ -50,11 +61,11 @@ mark{background:var(--accent-soft);color:var(--accent);border-radius:2px}
   .row .grow{flex-basis:100%}
   .row .rd{display:none}
   .row .acts{margin-left:auto}
+  .rform{flex-wrap:wrap}
+  .rform .fld{flex-basis:100%}
+  .rform .btn{flex:1}
   .wide{display:none}
   .narrow{display:inline-flex}
-  .form{grid-template-columns:1fr;padding:16px}
-  .formbtns{width:100%}
-  .formbtns .btn{flex:1;height:48px}
   .empty{flex-direction:column;align-items:flex-start;padding:24px 20px}
 }
 </style></head>
@@ -64,28 +75,25 @@ mark{background:var(--accent-soft);color:var(--accent);border-radius:2px}
   <h1 class="t">Your keys</h1>
   <p class="lede">In this machine's keychain. Values are never shown — assistants only see names.</p>
 
+  <form class="card form" id="form" novalidate aria-label="Add a key">
+    <div>
+      <label class="lbl" for="name">Name</label>
+      <input class="in" id="name" type="text" placeholder="CF_API_TOKEN" autocomplete="off" spellcheck="false" aria-describedby="namehelp">
+      <div class="help" id="namehelp" aria-live="polite"></div>
+    </div>
+    <div>
+      <label class="lbl" for="value">Value</label>
+      <div class="fld"><input class="in" id="value" type="password" placeholder="Paste the value" autocomplete="off" aria-describedby="valuehelp"><button class="ib eye" type="button" aria-label="Show value">${ICON.eye}</button></div>
+      <div class="help e" id="valuehelp" aria-live="polite"></div>
+    </div>
+    <button class="btn btn-p" type="submit" id="save">Save</button>
+  </form>
+
   <div class="sec"><span id="count">Loading…</span>
     <label id="filterbox" hidden><span class="vh">Filter keys</span><input class="filter" id="filter" type="search" placeholder="Filter by name" autocomplete="off" spellcheck="false"></label>
   </div>
   <div class="list" id="list" role="list"></div>
-
-  <div class="sec"><span id="formtitle">Add a key</span></div>
-  <form class="card form" id="form" novalidate>
-    <div>
-      <label class="lbl" for="name">Name</label>
-      <div class="fld"><input class="in" id="name" type="text" placeholder="CF_API_TOKEN" autocomplete="off" spellcheck="false" aria-describedby="namehelp"><span class="lockmark" id="namelock" hidden>${ICON.lock}</span></div>
-      <div class="help" id="namehelp" aria-live="polite"></div>
-    </div>
-    <div>
-      <label class="lbl" for="value" id="valuelabel">Value</label>
-      <div class="fld"><input class="in" id="value" type="password" placeholder="Paste the value" autocomplete="off" aria-describedby="valuehelp"><button class="ib eye" type="button" aria-label="Show value">${ICON.eye}</button></div>
-      <div class="help e" id="valuehelp" aria-live="polite"></div>
-    </div>
-    <div class="formfoot">
-      <span class="formnote" id="formnote"></span>
-      <div class="formbtns"><button class="btn btn-g" type="button" id="cancel" hidden>Cancel</button><button class="btn btn-p" type="submit" id="save">Save</button></div>
-    </div>
-  </form>
+  <div class="more" id="more" hidden><button class="btn btn-s" type="button" id="toggle"></button></div>
 
   <div class="sec"><span>Use it</span></div>
   <div class="cmd"><code><span class="p">$ </span>skey run --only NAME -- your-command</code><button class="ib" type="button" data-copy="skey run --only NAME -- your-command" aria-label="Copy command">${ICON.copy}</button></div>
@@ -97,7 +105,8 @@ mark{background:var(--accent-soft);color:var(--accent);border-radius:2px}
 <script>
 const ICON = ${JSON.stringify(ICON)}
 const NAME = /^[A-Z][A-Z0-9_]{0,63}$/
-const FILTER_FROM = 8
+// Столько последних ключей видно сразу; остальные — по «Show all» или фильтру.
+const RECENT = 5
 
 // Токен из адреса: он же ключ доступа к серверу, поэтому дальше он идёт
 // заголовком, а не в URL каждого запроса.
@@ -109,6 +118,7 @@ const $ = (id) => document.getElementById(id)
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';')
 
 let keys = []
+let showAll = false
 let confirming = null
 let replacing = null
 let justSaved = null
@@ -139,10 +149,16 @@ function sessionEnded() {
     '<div class="cmd"><code><span class="p">$ </span>skey ui</code><button class="ib" type="button" data-copy="skey ui" aria-label="Copy command">' + ICON.copy + '</button></div></div>'
 }
 
-async function load() {
+async function call(path, options) {
   let res
-  try { res = await api('/api/keys') } catch (e) { return sessionEnded() }
-  if (!res.ok) return sessionEnded()
+  try { res = await api(path, options) } catch (e) { sessionEnded(); return null }
+  if (res.status === 403) { sessionEnded(); return null }
+  return res
+}
+
+async function load() {
+  const res = await call('/api/keys')
+  if (!res) return
   keys = (await res.json()).keys
   renderList()
   checkName()
@@ -164,9 +180,14 @@ function row(k, q) {
   }
   if (k.name === replacing) {
     return '<div class="row replacing" role="listitem" data-name="' + n + '">' +
-      '<div class="grow"><div class="kn">' + n + '</div><span class="badge ac">Replacing</span></div>' +
-      '<span class="rd" aria-hidden="true"></span>' +
-      '<div class="acts"><button class="btn btn-g btn-sm" type="button" data-act="unreplace">Cancel</button></div></div>'
+      '<div class="grow"><div class="kn">' + n + '</div><span class="badge ac">Replacing · the old value is overwritten</span></div>' +
+      '<form class="rform" id="rform" novalidate>' +
+      '<div class="fld"><label class="vh" for="rvalue">New value for ' + n + '</label>' +
+      '<input class="in" id="rvalue" type="password" placeholder="Paste the new value" autocomplete="off">' +
+      '<button class="ib eye" type="button" aria-label="Show value">' + ICON.eye + '</button></div>' +
+      '<button class="btn btn-g" type="button" data-act="unreplace">Cancel</button>' +
+      '<button class="btn btn-p" type="submit">Replace</button></form>' +
+      '<div class="rhelp" id="rhelp" aria-live="polite"></div></div>'
   }
   const saved = k.name === justSaved
   return '<div class="row' + (saved ? ' saved' : '') + '" role="listitem" data-name="' + n + '">' +
@@ -181,12 +202,34 @@ function row(k, q) {
     '</div></div>'
 }
 
-function renderList() {
-  const q = $('filter').value.trim().toUpperCase()
-  $('filterbox').hidden = keys.length < FILTER_FROM
-  const shown = keys.length >= FILTER_FROM && q ? keys.filter((k) => k.name.includes(q)) : keys
+/**
+ * Что показать: при фильтре — все совпадения; развёрнуто — все по алфавиту;
+ * свёрнуто — последние изменённые, чтобы свежие ключи были под рукой.
+ */
+function visible(q) {
+  if (q) return keys.filter((k) => k.name.includes(q))
+  if (showAll || keys.length <= RECENT) return keys
+  const recent = [...keys].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, RECENT)
+  // Строку, которую сейчас меняют или удаляют, из вида не убираем.
+  for (const name of [replacing, confirming]) {
+    const k = name && keys.find((x) => x.name === name)
+    if (k && !recent.includes(k)) recent.push(k)
+  }
+  return recent
+}
 
-  $('count').textContent = keys.length + (keys.length === 1 ? ' key' : ' keys') + (shown.length !== keys.length ? ' · ' + shown.length + ' shown' : '')
+function renderList() {
+  const long = keys.length > RECENT
+  const q = $('filter').value.trim().toUpperCase()
+  $('filterbox').hidden = !long
+  const shown = visible(long ? q : '')
+  const total = keys.length + (keys.length === 1 ? ' key' : ' keys')
+
+  $('count').textContent = q && long ? total + ' · ' + shown.length + ' shown'
+    : long && !showAll ? 'Recent · ' + total : total
+
+  $('more').hidden = !long || Boolean(q)
+  $('toggle').textContent = showAll ? 'Show fewer' : 'Show all ' + keys.length + ' keys'
 
   if (keys.length === 0) {
     $('list').innerHTML =
@@ -195,48 +238,30 @@ function renderList() {
       '<div class="slot"><i style="width:90px"></i><i style="width:36px;background:var(--text)"></i></div>' +
       '<div class="slot"><i style="width:140px"></i><i style="width:36px;background:var(--accent)"></i></div></div>' +
       '<div><p style="margin:0;font-weight:600;font-size:16px">Nothing stored yet</p>' +
-      '<p style="margin:4px 0 12px;color:var(--muted)">Add a key below. Use names like</p>' +
+      '<p style="margin:4px 0 12px;color:var(--muted)">Add one above. Use names like</p>' +
       '<span class="chip">CF_API_TOKEN</span><span class="chip">HEROKU_API_KEY</span></div></div>'
     return
   }
   $('list').innerHTML = shown.map((k) => row(k, q)).join('') ||
     '<div class="row"><div class="grow meta">No key matches “' + esc(q) + '”.</div></div>'
   if (confirming) $('keep')?.focus()
+  if (replacing) $('rvalue')?.focus()
 }
 
-// --- форма: добавить или заменить -----------------------------------------------
-
-function setReplace(name) {
-  replacing = name
-  confirming = null
-  $('formtitle').textContent = name ? 'Replace ' + name : 'Add a key'
-  $('name').value = name || ''
-  $('name').readOnly = Boolean(name)
-  $('namelock').hidden = !name
-  $('valuelabel').textContent = name ? 'New value' : 'Value'
-  $('value').placeholder = name ? 'Paste the new value' : 'Paste the value'
-  $('value').value = ''
-  $('valuehelp').textContent = ''
-  $('value').classList.remove('err')
-  $('formnote').textContent = name ? 'The old value is overwritten.' : ''
-  $('cancel').hidden = !name
-  renderList()
-  checkName()
-  if (name) $('value').focus()
-}
+// --- добавить ключ (форма сверху) ------------------------------------------------
 
 function checkName(final) {
   const name = $('name').value
   const help = $('namehelp')
   const exists = keys.some((k) => k.name === name)
   const bad = name && !NAME.test(name)
+  const show = bad && (final || name.length > 1)
 
-  $('name').classList.toggle('err', Boolean(bad && (final || name.length > 1)))
+  $('name').classList.toggle('err', Boolean(show))
   $('name').setAttribute('aria-invalid', bad ? 'true' : 'false')
   $('save').textContent = exists ? 'Replace' : 'Save'
 
-  if (replacing) { help.className = 'help'; help.innerHTML = ''; return true }
-  if (bad && (final || name.length > 1)) {
+  if (show) {
     help.className = 'help e'
     help.innerHTML = ICON.alert + '<span>Use A–Z, 0–9 and underscore, starting with a letter</span>'
   } else if (exists) {
@@ -257,11 +282,30 @@ $('name').addEventListener('input', () => {
   checkName()
 })
 
+$('value').addEventListener('input', () => {
+  $('value').classList.remove('err')
+  $('valuehelp').textContent = ''
+})
+
+/** Сохранить значение. Одна дорога и для формы сверху, и для замены в строке. */
+async function store(name, value) {
+  const res = await call('/api/keys', { method: 'POST', body: JSON.stringify({ name, value }) })
+  if (!res) return false
+  const body = await res.json()
+  if (!res.ok) throw new Error(body.error)
+
+  justSaved = name
+  setTimeout(() => { justSaved = null; renderList() }, 2000)
+  toast('check', 'Stored', name)
+  await load()
+  return true
+}
+
 $('form').addEventListener('submit', async (e) => {
   e.preventDefault()
   const name = $('name').value
   const value = $('value').value
-  if (!name) { $('name').focus(); return checkName(true) }
+  if (!name) { checkName(true); return $('name').focus() }
   if (!checkName(true)) return $('name').focus()
   if (!value) {
     $('value').classList.add('err')
@@ -270,42 +314,48 @@ $('form').addEventListener('submit', async (e) => {
   }
 
   $('save').disabled = true
-  let res
   try {
-    res = await api('/api/keys', { method: 'POST', body: JSON.stringify({ name, value }) })
+    // Значение не должно задерживаться в форме: его подхватит менеджер паролей
+    // или увидит человек через плечо.
+    if (await store(name, value)) {
+      $('name').value = ''
+      $('value').value = ''
+      $('value').type = 'password'
+      checkName()
+    }
   } catch (error) {
-    return sessionEnded()
+    $('valuehelp').innerHTML = ICON.alert + '<span>' + esc(error.message) + '</span>'
   } finally {
     $('save').disabled = false
   }
-  if (res.status === 403) return sessionEnded()
-  const body = await res.json()
-  if (!res.ok) {
-    $('valuehelp').innerHTML = ICON.alert + '<span>' + esc(body.error) + '</span>'
-    return
+})
+
+// --- замена в строке --------------------------------------------------------------
+
+document.addEventListener('submit', async (e) => {
+  if (e.target.id !== 'rform') return
+  e.preventDefault()
+  const value = $('rvalue').value
+  if (!value) {
+    $('rvalue').classList.add('err')
+    $('rhelp').innerHTML = ICON.alert + 'Paste a value'
+    return $('rvalue').focus()
   }
-
-  // Значение не должно задерживаться в форме: его подхватит менеджер паролей
-  // или увидит человек через плечо.
-  $('value').value = ''
-  $('value').type = 'password'
-  justSaved = name
-  setTimeout(() => { justSaved = null; renderList() }, 2000)
-  setReplace(null)
-  $('name').value = ''
-  toast('check', 'Stored', name)
-  load()
+  const name = replacing
+  try {
+    replacing = null
+    await store(name, value)
+  } catch (error) {
+    replacing = name
+    renderList()
+    $('rhelp').innerHTML = ICON.alert + esc(error.message)
+  }
 })
 
-$('value').addEventListener('input', () => {
-  $('value').classList.remove('err')
-  $('valuehelp').textContent = ''
-})
+// --- действия в строках, копирование, показать значение ---------------------------
 
-$('cancel').addEventListener('click', () => setReplace(null))
 $('filter').addEventListener('input', renderList)
-
-// --- действия в строках, копирование, показать значение --------------------------
+$('toggle').addEventListener('click', () => { showAll = !showAll; renderList() })
 
 document.addEventListener('click', async (e) => {
   const copy = e.target.closest('[data-copy]')
@@ -333,18 +383,13 @@ document.addEventListener('click', async (e) => {
     await navigator.clipboard.writeText('skey run --only ' + name + ' -- your-command')
     return toast('check', 'Copied run command for', name)
   }
-  if (act === 'replace') return setReplace(name)
-  if (act === 'unreplace') return setReplace(null)
+  if (act === 'replace') { replacing = name; confirming = null; return renderList() }
+  if (act === 'unreplace') { replacing = null; return renderList() }
   if (act === 'delete') { confirming = name; replacing = null; return renderList() }
   if (act === 'keep') { confirming = null; return renderList() }
   if (act === 'drop') {
-    let res
-    try {
-      res = await api('/api/keys', { method: 'DELETE', body: JSON.stringify({ name }) })
-    } catch (error) {
-      return sessionEnded()
-    }
-    if (res.status === 403) return sessionEnded()
+    const res = await call('/api/keys', { method: 'DELETE', body: JSON.stringify({ name }) })
+    if (!res) return
     confirming = null
     toast('trash', 'Deleted', name)
     load()
@@ -354,7 +399,7 @@ document.addEventListener('click', async (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return
   if (confirming) { confirming = null; renderList() }
-  else if (replacing) setReplace(null)
+  else if (replacing) { replacing = null; renderList() }
 })
 
 load()
