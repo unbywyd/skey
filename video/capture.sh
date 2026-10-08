@@ -19,7 +19,7 @@ Webhook: Developers → Webhooks → your endpoint → Signing secret." \
   --no-open --timeout 10 > "$OUT/c1.out" 2>&1 &
 P1=$!; sleep 3
 node capture.mjs local "$(link 'http://127.0.0.1:' "$OUT/c1.out")" "$OUT/c1" \
-  '{"STRIPE_SECRET_KEY":"sk_test_51PxQ7mDemo9fA2kQ7Lm3Vn8RtYw4Zb","STRIPE_WEBHOOK_SECRET":"whsec_4fT9qWzXDemoSigning2kQ7Lm3V"}' \
+  '{"STRIPE_SECRET_KEY":"demo-only-stripe-secret-not-a-real-key00","STRIPE_WEBHOOK_SECRET":"demo-only-webhook-secret-not-real"}' \
   || { echo 'capture 1 failed'; kill $P1; }
 wait $P1
 
@@ -43,7 +43,7 @@ Resend → API Keys → Create API key." \
 P2=$!; sleep 3
 L2=$(link 'http://127.0.0.1:' "$OUT/c2.out"); T2=${L2#*t=}; B2=${L2%%/?t=*}
 curl -s -H "x-skey-token: $T2" -H 'Content-Type: application/json' \
-  -d '{"values":{"RESEND_API_KEY":"re_Demo8fT2kQ7Lm3Vn8RtYw4ZbX9","RESEND_AUDIENCE_ID":""}}' "$B2/api/request" > /dev/null
+  -d '{"values":{"RESEND_API_KEY":"demo-only-resend-key-not-real","RESEND_AUDIENCE_ID":""}}' "$B2/api/request" > /dev/null
 wait $P2
 
 # --- 3. Ключ у друга: ссылка на другой компьютер ------------------------------------
@@ -53,7 +53,7 @@ Supabase → Project Settings → Database → Connection string (URI)." \
   --timeout 10 > "$OUT/c3.out" 2>&1 &
 P3=$!; sleep 4
 node capture.mjs remote "$(link 'https://skey.tscodex.com/r/' "$OUT/c3.out")" "$OUT/c3" \
-  '{"SUPABASE_DB_URL":"postgresql://postgres.demo:Sup3rDemoPass@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"}' Nina \
+  '{"SUPABASE_DB_URL":"demo-only-database-url-not-a-real-connection-string-0000000000000000000000000000000000"}' Nina \
   || { echo 'capture 3 failed'; kill $P3; }
 wait $P3
 

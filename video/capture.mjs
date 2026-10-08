@@ -39,7 +39,7 @@ if (mode === 'keys') {
   const meta = { keys: Math.round(await y('#form')) - 40 }
   await page.screenshot({ path: `${prefix}-keys.png`, fullPage: true })
   await page.locator('.row[data-name="STRIPE_SECRET_KEY"] [data-act="replace"]').click()
-  await page.locator('#rvalue').pressSequentially('sk_test_51RotatedDemoKey7Lm3Vn8RtYw', { delay: 4 })
+  await page.locator('#rvalue').pressSequentially('demo-only-rotated-key-not-real-0000', { delay: 4 })
   await page.mouse.move(5, 5)
   meta.replace = Math.round(await y('.row.replacing')) - 260
   await page.screenshot({ path: `${prefix}-replace.png`, fullPage: true })
