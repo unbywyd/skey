@@ -16,6 +16,7 @@
 
 import { REQUEST_PAGE } from '../../src/request-page.js'
 import { LANDING } from './landing.js'
+import { withProducts } from './products.js'
 
 interface Env {
   DB: D1Database
@@ -40,6 +41,9 @@ const PAGE_HEADERS = {
     "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; " +
     "img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
 }
+
+/** The landing as served: the generated page plus the sibling products (products.ts). */
+const PAGE = withProducts(LANDING)
 
 const LANDING_HEADERS = {
   'Content-Type': 'text/html; charset=utf-8',
@@ -147,7 +151,7 @@ async function route(req: Request, env: Env): Promise<Response> {
 
   // Лендинг: единственная страница, которой можно шрифты с Google Fonts.
   if (req.method === 'GET' && path === '/') {
-    return new Response(LANDING, { headers: LANDING_HEADERS })
+    return new Response(PAGE, { headers: LANDING_HEADERS })
   }
 
   // Страница ответа. Сам запрос она достанет через API, секрет — из фрагмента.
