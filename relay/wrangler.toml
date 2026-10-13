@@ -1,5 +1,7 @@
 name = "skey-relay"
 main = "src/index.ts"
+# Аккаунт задан явно: CF_ACCOUNT_ID из окружения других проектов не уведёт деплой не туда.
+account_id = "61ec38be453034cef3b2c93f0645df51"
 compatibility_date = "2026-09-01"
 routes = [{ pattern = "skey.tscodex.com", custom_domain = true }]
 
